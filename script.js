@@ -14,7 +14,6 @@ const gravity = 0.8;
 const sprites = {
     pichu: new Image(),
     pikachu: new Image(),
-    raichu: new Image(),
     enemy: new Image(),
     stone: new Image()
 };
@@ -22,7 +21,6 @@ const sprites = {
 // Reliable URLs
 sprites.pichu.src = './assets/pichu.png';
 sprites.pikachu.src = './assets/pikachu.png';
-sprites.raichu.src = './assets/raichu.png';
 sprites.enemy.src = './assets/meowth.png';
 sprites.stone.src = './assets/lightning-bolt.png';
 
