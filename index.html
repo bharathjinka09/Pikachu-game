@@ -1,48 +1,98 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="icon" type="image/png" href="./assets/pikachu.png">
     <title>Pikachu Evolution Run</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #222; font-family: 'Arial', sans-serif; }
-        canvas { display: block; background: linear-gradient(#87CEEB, #E0F6FF); }
-        
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #222;
+            font-family: 'Arial', sans-serif;
+        }
+
+        canvas {
+            display: block;
+            background: linear-gradient(#87CEEB, #E0F6FF);
+        }
+
         #ui {
-            position: absolute; top: 20px; left: 20px; color: white;
-            text-shadow: 2px 2px #000; font-size: 20px; z-index: 10;
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            text-shadow: 2px 2px #000;
+            font-size: 20px;
+            z-index: 10;
         }
 
         /* Mobile Controls */
         #mobile-controls {
-            position: fixed; bottom: 30px; width: 100%;
-            display: flex; justify-content: space-between;
-            padding: 0 30px; box-sizing: border-box;
-            pointer-events: none; z-index: 100;
+            position: fixed;
+            bottom: 30px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 30px;
+            box-sizing: border-box;
+            pointer-events: none;
+            z-index: 100;
         }
+
         #mobile-controls button {
-            pointer-events: auto; width: 70px; height: 70px;
-            background: rgba(255, 255, 255, 0.3); border: 2px solid white;
-            border-radius: 50%; color: white; font-weight: bold;
+            pointer-events: auto;
+            width: 70px;
+            height: 70px;
+            background: rgba(255, 255, 255, 0.3);
+            border: 2px solid white;
+            border-radius: 50%;
+            color: white;
+            font-weight: bold;
             touch-action: manipulation;
         }
-        .btn-group { display: flex; gap: 15px; }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+        }
 
         /* Start Overlay */
         #start-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); display: flex; flex-direction: column;
-            justify-content: center; align-items: center; z-index: 1000; color: white;
-        }
-        #start-btn {
-            padding: 15px 40px; font-size: 24px; cursor: pointer;
-            background: #FFDE00; border: none; border-radius: 10px; font-weight: bold;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            color: white;
         }
 
-        @media (min-width: 1024px) { #mobile-controls { display: none; } }
+        #start-btn {
+            padding: 15px 40px;
+            font-size: 24px;
+            cursor: pointer;
+            background: #FFDE00;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+
+        @media (min-width: 1024px) {
+            #mobile-controls {
+                display: none;
+            }
+        }
     </style>
 </head>
+
 <body>
 
     <div id="start-overlay">
@@ -51,9 +101,17 @@
         <button id="start-btn">START GAME</button>
     </div>
 
-    <div id="ui">
-        SCORE: <span id="score">0</span><br>
-        <span id="message">Find the Lightning Bolt!</span>
+    <div id="ui-container"
+        style="position: fixed; top: 20px; left: 20px; color: white; font-family: 'Arial', sans-serif; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); z-index: 1000;">
+        <div style="font-size: 24px; font-weight: bold; color: #FFDE00;">
+            SCORE: <span id="score">0</span>
+        </div>
+        <div style="font-size: 14px; opacity: 0.9; margin: 5px 0;">
+            BEST: <span id="high-score">0</span> | MAX LV: <span id="max-level">1</span>
+        </div>
+        <div id="message" style="font-size: 16px; font-style: italic; color: #00FFCC;">
+            Find the Lightning Bolt!
+        </div>
     </div>
 
     <div id="mobile-controls">
@@ -67,13 +125,15 @@
         </div>
     </div>
 
-    <div id="level-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); color:#FFDE00; flex-direction:column; justify-content:center; align-items:center; z-index:2000; font-size:40px; font-weight:bold;">
+    <div id="level-overlay"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); color:#FFDE00; flex-direction:column; justify-content:center; align-items:center; z-index:2000; font-size:40px; font-weight:bold;">
         <div id="level-title">LEVEL 1</div>
         <div id="level-subtitle" style="font-size:20px; color:white; margin-top:10px;">Emerald Path</div>
     </div>
-    
+
     <canvas id="canvas"></canvas>
 
     <script src="script.js"></script>
 </body>
+
 </html>

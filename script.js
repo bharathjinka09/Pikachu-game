@@ -3,6 +3,36 @@ const ctx = canvas.getContext('2d');
 const scoreEl = document.getElementById('score');
 const msgEl = document.getElementById('message');
 
+// --- HIGH SCORE LOGIC ---
+const highScoreEl = document.getElementById('high-score');
+const maxLevelEl = document.getElementById('max-level');
+
+// Load data when the script starts
+let highScore = localStorage.getItem('pichuHighScore') || 0;
+let maxLevel = localStorage.getItem('pichuMaxLevel') || 1;
+
+// Update UI on load
+highScoreEl.innerText = highScore;
+maxLevelEl.innerText = maxLevel;
+
+function updateHighScores() {
+    // Check if current score is better
+    if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('pichuHighScore', highScore);
+        highScoreEl.innerText = highScore;
+        highScoreEl.style.color = "#FFD700"; // Gold color for new record!
+    }
+    
+    // Check if current level is higher
+    if (currentLevel > maxLevel) {
+        maxLevel = currentLevel;
+        localStorage.setItem('pichuMaxLevel', maxLevel);
+        maxLevelEl.innerText = maxLevel;
+    }
+}
+
+// Set canvas to full window size
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
@@ -59,6 +89,7 @@ let currentLevel = 1;
 let isTransitioning = false;
 function goToNextLevel() {
     if (isTransitioning) return; // Prevent double triggers
+    updateHighScores();
     isTransitioning = true;
 
     currentLevel++;
@@ -100,6 +131,7 @@ function resetGame(isNewLevel = false) {
     cameraX = 0;
     
     if (!isNewLevel) {
+        updateHighScores(); // Save score before it gets reset to 0
         score = 0;
         scoreEl.innerText = score;
         msgEl.innerText = "Find the Lightning Bolt!";
