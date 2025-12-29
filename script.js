@@ -61,7 +61,8 @@ const sprites = {
     enemy: new Image(), stone: new Image(), goal: new Image()
 };
 sprites.pichu.src = './assets/pichu.png';
-sprites.pikachu.src = './assets/pikachu.png';
+// sprites.pikachu.src = './assets/pikachu.png';
+sprites.pikachu.src = './assets/pikachu.gif';
 sprites.enemy.src = './assets/meowth.png';
 sprites.stone.src = './assets/lightning-bolt.png';
 sprites.goal.src = './assets/pokeball.png';
