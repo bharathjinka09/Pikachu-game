@@ -12,6 +12,12 @@ let score = 0;
 const gravity = 0.8;
 const goalX = 4800;
 const keys = {};
+const levelConfigs = {
+    1: { bg: "#87CEEB", ground: "#4a2c00", enemySpeed: -3, length: 5000, title: "Emerald Path" },
+    2: { bg: "#2e1a47", ground: "#1a1a1a", enemySpeed: -5, length: 6000, title: "Shadow Cave" },
+    3: { bg: "#e67e22", ground: "#d35400", enemySpeed: -7, length: 7000, title: "Volcano Ridge" },
+    4: { bg: "#2c3e50", ground: "#ecf0f1", enemySpeed: -9, length: 8000, title: "Moonlight Peak" }
+};
 
 // --- AUDIO ---
 const sounds = {
@@ -52,49 +58,52 @@ let currentLevel = 1;
 
 function goToNextLevel() {
     currentLevel++;
+    
+    // Check if we ran out of levels
     if (!levelConfigs[currentLevel]) {
         alert("CONGRATULATIONS! You are the Pokémon Champion!");
-        currentLevel = 1; // Loop back to start
+        currentLevel = 1; 
     }
     
-    // Smooth transition
     msgEl.innerText = `Entering Level ${currentLevel}: ${levelConfigs[currentLevel].title}`;
     
-    // Refresh the world for the new level
+    // Crucial: Reset the game state for the new level
     resetGame(true); 
 }
+
 
 function resetGame(isNewLevel = false) {
     const config = levelConfigs[currentLevel];
     
+    // 1. Reset Player Position & State
     p.x = 100;
-    p.y = canvas.height - 200;
+    p.y = canvas.height - 250; // Start slightly in the air
     p.dy = 0;
+    p.isPikachu = false;
+    p.grounded = false;
     cameraX = 0;
     
-    // Only reset score if they died, not if they finished a level
     if (!isNewLevel) {
         score = 0;
         scoreEl.innerText = score;
+        msgEl.innerText = "Find the Lightning Bolt!";
     }
 
+    // 2. Clear Arrays
     enemies.length = 0;
     bolts.length = 0;
+    
+    // 3. Re-generate platforms for the SPECIFIC level
     platforms = generateLevel(currentLevel);
     
-    // Place stone
+    // 4. Reposition the Stone
     stone.active = true;
-    stone.x = platforms[2].x + 50;
-    stone.y = platforms[2].y - 60;
+    if (platforms[2]) {
+        stone.x = platforms[2].x + 50;
+        stone.y = platforms[2].y - 60;
+    }
 }
 
-
-const levelConfigs = {
-    1: { bg: "#87CEEB", ground: "#4a2c00", enemySpeed: -3, length: 5000, title: "Emerald Path" },
-    2: { bg: "#2e1a47", ground: "#1a1a1a", enemySpeed: -5, length: 6000, title: "Shadow Cave" },
-    3: { bg: "#e67e22", ground: "#d35400", enemySpeed: -7, length: 7000, title: "Volcano Ridge" },
-    4: { bg: "#2c3e50", ground: "#ecf0f1", enemySpeed: -9, length: 8000, title: "Moonlight Peak" }
-};
 
 function generateLevel(lvlNum) {
     const config = levelConfigs[lvlNum] || levelConfigs[1]; // Fallback to Level 1
@@ -179,10 +188,11 @@ class Player {
 }
 
 
+
 class Enemy {
     constructor(x, y) {
         this.x = x; this.y = y; this.w = 50; this.h = 50;
-        // Speed gets faster as levels go up
+        // Use currentLevel speed from config
         this.dx = levelConfigs[currentLevel].enemySpeed; 
     }
     update() { this.x += this.dx; }
@@ -255,13 +265,16 @@ function animate() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // 2. WIN CONDITION (Check against the actual level length)
-    const finishLine = config.length - 300;
+    
+    const finishLine = levelConfigs[currentLevel].length - 300;
+    
     if (p.x > finishLine) {
+        p.x = 0; // Move player immediately so this IF doesn't trigger again
         playSound(sounds.level_complete);
         goToNextLevel();
-        return; 
+        return; // Stop this frame entirely
     }
-
+    
     // 3. DRAW SCENERY
     ctx.fillStyle = "white";
     clouds.forEach(c => {
