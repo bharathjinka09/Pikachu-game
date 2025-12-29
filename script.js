@@ -242,3 +242,41 @@ document.getElementById('start-btn').onclick = () => {
     sounds.bgm.play().catch(() => {});
     resetGame(); animate();
 };
+
+
+// --- MOBILE TOUCH CONTROLS ---
+const handleTouch = (id, key) => {
+    const el = document.getElementById(id);
+    
+    el.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        keys[key] = true;
+        
+        // Specialized logic for Jump (instant trigger)
+        if (id === 'btn-jump') {
+            if (p.grounded) {
+                p.dy = p.jump; p.grounded = false; p.canDoubleJump = true; playSound(sounds.jump);
+            } else if (p.canDoubleJump) {
+                p.dy = p.jump * 0.8; p.canDoubleJump = false; playSound(sounds.jump);
+            }
+        }
+        
+        // Specialized logic for Shoot
+        if (id === 'btn-shoot' && p.isPikachu) {
+            let dir = p.facingLeft ? -1 : 1;
+            bolts.push({ x: p.facingLeft ? p.x : p.x + p.w, y: p.y + 20, dx: 12 * dir });
+            playSound(sounds.zap);
+        }
+    });
+
+    el.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        keys[key] = false;
+    });
+};
+
+// Initialize buttons
+handleTouch('btn-left', 'ArrowLeft');
+handleTouch('btn-right', 'ArrowRight');
+handleTouch('btn-jump', 'ArrowUp'); // We use ArrowUp to trigger the state, but logic is handled in touchstart
+handleTouch('btn-shoot', 'Space');
