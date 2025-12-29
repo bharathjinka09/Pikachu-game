@@ -1,0 +1,18 @@
+body {
+    margin: 0;
+    overflow: hidden;
+    background: #222;
+    font-family: 'Courier New', Courier, monospace;
+}
+#game-ui {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    color: white;
+    font-size: 24px;
+    z-index: 10;
+}
+canvas {
+    display: block;
+    background: linear-gradient(#87CEEB, #E0F6FF);
+}
