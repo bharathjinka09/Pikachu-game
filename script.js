@@ -153,16 +153,43 @@ function spawnEnemy() {
 }
 
 
+let clouds = [
+    {x: 200, y: 100, s: 0.2}, 
+    {x: 600, y: 50, s: 0.3}, 
+    {x: 1000, y: 120, s: 0.25}
+];
+
 function animate() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw Platforms
+    // --- 1. DRAW PARALLAX BACKGROUND (CLOUDS) ---
+    ctx.fillStyle = "white";
+    clouds.forEach(c => {
+        // Clouds move at a fraction of cameraX
+        let cloudX = (c.x - cameraX * c.s) % (canvas.width + 200);
+        if (cloudX < -100) cloudX += canvas.width + 200; 
+        ctx.beginPath();
+        ctx.arc(cloudX, c.y, 30, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    // --- 2. DRAW PLATFORMS ---
     ctx.fillStyle = "#4a2c00";
     platforms.forEach(plat => {
         ctx.fillRect(plat.x - cameraX, plat.y, plat.w, plat.h);
     });
 
-    // Stone logic
+    // --- 3. DRAW GOAL (POKÉBALL) ---
+    ctx.drawImage(sprites.goal, goalX - cameraX, canvas.height - 180, 80, 80);
+    
+    // Win Check
+    if (p.x > goalX) {
+        alert("You Won! Final Score: " + score);
+        p.reset();
+        return; 
+    }
+
+    // --- 4. STONE LOGIC ---
     if (stone.active) {
         ctx.drawImage(sprites.stone, stone.x - cameraX, stone.y, stone.w, stone.h);
         if (p.x < stone.x + stone.w && p.x + p.w > stone.x && p.y < stone.y + stone.h && p.y + p.h > stone.y) {
@@ -172,44 +199,37 @@ function animate() {
         }
     }
 
-    // Update & Draw Player
+    // --- 5. UPDATE & DRAW PLAYER ---
     p.update();
     p.draw();
 
-    // Spawn New Enemies
+    // --- 6. ENEMY SPAWNING & LOGIC ---
     spawnEnemy();
-
-    // Enemy Logic
     for (let i = enemies.length - 1; i >= 0; i--) {
         let en = enemies[i];
         en.update();
         en.draw();
 
-        // 1. Collision with Player
+        // Player Hit Enemy
         if (p.x < en.x + en.w && p.x + p.w > en.x && p.y < en.y + en.h && p.y + p.h > en.y) {
             alert("Game Over! Score: " + score);
             p.reset();
-            enemies.length = 0; // Clear enemies on reset
-            return; // Stop animation frame for a moment
+            enemies.length = 0; 
+            return;
         }
 
-        // 2. Collision with Thunderbolts
+        // Bolt Hit Enemy
         bolts.forEach((b, bi) => {
             if (b.x < en.x + en.w && b.x + b.w > en.x && b.y < en.y + en.h && b.y + b.h > en.y) {
-                enemies.splice(i, 1); // Remove enemy
-                bolts.splice(bi, 1); // Remove bolt
+                enemies.splice(i, 1);
+                bolts.splice(bi, 1);
                 score += 50;
                 scoreEl.innerText = score;
             }
         });
-
-        // 3. Remove enemies that are far behind to save memory
-        if (en.x < cameraX - 100) {
-            enemies.splice(i, 1);
-        }
     }
 
-    // Bolt Logic (Movement only)
+    // --- 7. THUNDERBOLTS ---
     bolts.forEach((b, i) => {
         b.x += 12;
         ctx.fillStyle = "yellow";
@@ -219,5 +239,4 @@ function animate() {
 
     requestAnimationFrame(animate);
 }
-
 animate();
