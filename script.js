@@ -206,7 +206,6 @@ function animate() {
         playSound(sounds.level_complete);
         alert("You Won! Final Score: " + score);
         p.reset();
-        location.reload();
         return; 
     }
 
