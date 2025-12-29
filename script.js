@@ -12,7 +12,7 @@ const sounds = {
     jump: new Audio('./assets/jump.mp3'), // Short Beep
     evolve: new Audio('./assets/evolve.mp3'), // Power up
     zap: new Audio('./assets/bullet.mp3'), // Zap
-    hit: new Audio('./assets/hit.mp3') // Death
+    hit: new Audio('./assets/hit.mp3'), // Death
     game_over: new Audio('./assets/game_over.mp3') // Game Over
 };
 
