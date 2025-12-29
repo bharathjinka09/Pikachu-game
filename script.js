@@ -9,10 +9,10 @@ canvas.height = window.innerHeight;
 
 // --- AUDIO SECTION ---
 const sounds = {
-    jump: new Audio("data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBAAAAABAAEAIlYAAESsAAACABAAZGF0YRAAAAAAAAD//wIAAAAAAP//AgAAAA=="), // Short Beep
-    evolve: new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAgD4AAAB9AAACABAAZGF0YAgAAAAAAAD//wIA"), // Power up
-    zap: new Audio("data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBAAAAABAAEAIlYAAESsAAACABAAZGF0YRAAAAAAAAD//wIAAAAAAP//AgAAAA=="), // Zap
-    hit: new Audio("data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBAAAAABAAEAIlYAAESsAAACABAAZGF0YRAAAAAAAAD//wIAAAAAAP//AgAAAA==") // Death
+    jump: new Audio('./assets/jump.mp3'), // Short Beep
+    evolve: new Audio('./assets/evolve.mp3'), // Power up
+    zap: new Audio('./assets/bullet.mp3'), // Zap
+    hit: new Audio('./assets/bullet.mp3') // Death
 };
 
 // Helper function to play sounds from the start even if triggered rapidly
