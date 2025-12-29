@@ -27,7 +27,10 @@ sounds.bgm.volume = 0.4;
 
 function playSound(sound) {
     sound.currentTime = 0;
-    sound.play().catch(() => {});
+    // Adding the .catch() prevents unhandled promise errors
+    sound.play().catch(error => {
+        console.warn("Audio play blocked or interrupted:", error);
+    });
 }
 
 // --- ASSETS ---
@@ -306,6 +309,6 @@ function animate() {
 // Start Game
 document.getElementById('start-btn').onclick = () => {
     document.getElementById('start-overlay').style.display = 'none';
-    sounds.bgm.play();
+    sounds.bgm.play().catch(e => console.log("BGM error:", e));
     animate();
 };
