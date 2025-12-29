@@ -13,6 +13,7 @@ const sounds = {
     evolve: new Audio('./assets/evolve.mp3'), // Power up
     zap: new Audio('./assets/bullet.mp3'), // Zap
     hit: new Audio('./assets/hit.mp3'), // Death
+    level_complete: new Audio('./assets/level_complete.mp3'), // Level Complete
     game_over: new Audio('./assets/game_over.mp3') // Game Over
 };
 
@@ -202,6 +203,7 @@ function animate() {
     
     // Win Check
     if (p.x > goalX) {
+        playSound(sounds.level_complete);
         alert("You Won! Final Score: " + score);
         p.reset();
         return; 
