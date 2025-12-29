@@ -9,6 +9,7 @@ canvas.height = window.innerHeight;
 let cameraX = 0;
 let score = 0;
 const gravity = 0.8;
+const goalX = 4800; // Near the end of the floor
 
 // --- ASSET LOADING ---
 const sprites = {
@@ -24,6 +25,10 @@ sprites.pikachu.src = './assets/pikachu.png';
 sprites.enemy.src = './assets/meowth.png';
 sprites.stone.src = './assets/lightning-bolt.png';
 
+sprites.goal = new Image();
+sprites.goal.src = './assets/pokeball.png';
+
+// --- GAME OBJECTS ---
 const platforms = [
     { x: 0, y: canvas.height - 100, w: 5000, h: 100 }, // Floor
     { x: 400, y: canvas.height - 250, w: 200, h: 20 },
@@ -111,7 +116,12 @@ class Enemy {
         this.dx = -2;
     }
     draw() {
-        ctx.drawImage(sprites.enemy, this.x, this.y, this.w, this.h);
+        if (sprites.enemy.complete && sprites.enemy.naturalHeight !== 0) {
+            ctx.drawImage(sprites.enemy, this.x - cameraX, this.y, this.w, this.h);
+        } else {
+            ctx.fillStyle = "red";
+            ctx.fillRect(this.x - cameraX, this.y, this.w, this.h);
+        }
     }
     update() {
         this.x += this.dx;
@@ -131,11 +141,17 @@ window.onkeydown = (e) => {
     }
 };
 window.onkeyup = (e) => keys[e.code] = false;
+
+
 function spawnEnemy() {
+    // 0.01 is about 1 enemy every 1.5 seconds at 60fps
     if (Math.random() < 0.01) {
-        enemies.push(new Enemy(canvas.width, canvas.height - 100));
+        // Spawn them just off the right edge of the current screen
+        let spawnX = cameraX + canvas.width; 
+        enemies.push(new Enemy(spawnX, canvas.height - 150));
     }
 }
+
 
 function animate() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -146,7 +162,7 @@ function animate() {
         ctx.fillRect(plat.x - cameraX, plat.y, plat.w, plat.h);
     });
 
-    // Stone
+    // Stone logic
     if (stone.active) {
         ctx.drawImage(sprites.stone, stone.x - cameraX, stone.y, stone.w, stone.h);
         if (p.x < stone.x + stone.w && p.x + p.w > stone.x && p.y < stone.y + stone.h && p.y + p.h > stone.y) {
@@ -160,31 +176,45 @@ function animate() {
     p.update();
     p.draw();
 
-    // Bolts
+    // Spawn New Enemies
+    spawnEnemy();
+
+    // Enemy Logic
+    for (let i = enemies.length - 1; i >= 0; i--) {
+        let en = enemies[i];
+        en.update();
+        en.draw();
+
+        // 1. Collision with Player
+        if (p.x < en.x + en.w && p.x + p.w > en.x && p.y < en.y + en.h && p.y + p.h > en.y) {
+            alert("Game Over! Score: " + score);
+            p.reset();
+            enemies.length = 0; // Clear enemies on reset
+            return; // Stop animation frame for a moment
+        }
+
+        // 2. Collision with Thunderbolts
+        bolts.forEach((b, bi) => {
+            if (b.x < en.x + en.w && b.x + b.w > en.x && b.y < en.y + en.h && b.y + b.h > en.y) {
+                enemies.splice(i, 1); // Remove enemy
+                bolts.splice(bi, 1); // Remove bolt
+                score += 50;
+                scoreEl.innerText = score;
+            }
+        });
+
+        // 3. Remove enemies that are far behind to save memory
+        if (en.x < cameraX - 100) {
+            enemies.splice(i, 1);
+        }
+    }
+
+    // Bolt Logic (Movement only)
     bolts.forEach((b, i) => {
         b.x += 12;
         ctx.fillStyle = "yellow";
         ctx.fillRect(b.x - cameraX, b.y, b.w, b.h);
         if (b.x - cameraX > canvas.width) bolts.splice(i, 1);
-        // Kill enemies
-        enemies.forEach((en, ei) => {
-            if (b.x < en.x + en.w && b.x + b.w > en.x && b.y < en.y + en.h) {
-                enemies.splice(ei, 1);
-                bolts.splice(i, 1);
-                score += 50;
-                scoreEl.innerText = score;
-            }
-        });
-    });
-
-    // Enemy Logic
-    enemies.forEach((en, i) => {
-        en.update();
-        en.draw();
-        if (p.x < en.x + en.w && p.x + p.w > en.x && p.y + p.h > en.y) {
-            alert("Game Over! Score: " + score);
-            // location.reload();
-        }
     });
 
     requestAnimationFrame(animate);
