@@ -6,6 +6,21 @@ const msgEl = document.getElementById('message');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
+
+// --- AUDIO SECTION ---
+const sounds = {
+    jump: new Audio("data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBAAAAABAAEAIlYAAESsAAACABAAZGF0YRAAAAAAAAD//wIAAAAAAP//AgAAAA=="), // Short Beep
+    evolve: new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAgD4AAAB9AAACABAAZGF0YAgAAAAAAAD//wIA"), // Power up
+    zap: new Audio("data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBAAAAABAAEAIlYAAESsAAACABAAZGF0YRAAAAAAAAD//wIAAAAAAP//AgAAAA=="), // Zap
+    hit: new Audio("data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBAAAAABAAEAIlYAAESsAAACABAAZGF0YRAAAAAAAAD//wIAAAAAAP//AgAAAA==") // Death
+};
+
+// Helper function to play sounds from the start even if triggered rapidly
+function playSound(sound) {
+    sound.currentTime = 0;
+    sound.play().catch(e => console.log("Sound blocked until user interacts with page."));
+}
+
 let cameraX = 0;
 let score = 0;
 const gravity = 0.8;
@@ -67,6 +82,7 @@ class Player {
         if (keys.ArrowUp && this.grounded) {
             this.dy = this.jump;
             this.grounded = false;
+            playSound(sounds.jump);
         }
 
         this.dy += gravity;
@@ -138,6 +154,7 @@ window.onkeydown = (e) => {
     keys[e.code] = true;
     if (e.code === 'Space' && p.isPikachu) {
         bolts.push({ x: p.x + 50, y: p.y + 20, w: 30, h: 10 });
+        playSound(sounds.zap);
     }
 };
 window.onkeyup = (e) => keys[e.code] = false;
@@ -195,6 +212,7 @@ function animate() {
         if (p.x < stone.x + stone.w && p.x + p.w > stone.x && p.y < stone.y + stone.h && p.y + p.h > stone.y) {
             stone.active = false;
             p.isPikachu = true;
+            playSound(sounds.evolve);
             msgEl.innerText = "EVOLVED! Press SPACE to Thunderbolt!";
         }
     }
@@ -212,6 +230,7 @@ function animate() {
 
         // Player Hit Enemy
         if (p.x < en.x + en.w && p.x + p.w > en.x && p.y < en.y + en.h && p.y + p.h > en.y) {
+            playSound(sounds.hit);                
             alert("Game Over! Score: " + score);
             p.reset();
             enemies.length = 0; 
