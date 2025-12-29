@@ -12,6 +12,12 @@ let score = 0;
 const gravity = 0.8;
 const goalX = 4800;
 const keys = {};
+const levelConfigs = {
+    1: { bg: "#87CEEB", ground: "#4a2c00", enemySpeed: -3, length: 5000, title: "Emerald Path" },
+    2: { bg: "#2e1a47", ground: "#1a1a1a", enemySpeed: -5, length: 6000, title: "Shadow Cave" },
+    3: { bg: "#e67e22", ground: "#d35400", enemySpeed: -7, length: 7000, title: "Volcano Ridge" },
+    4: { bg: "#2c3e50", ground: "#ecf0f1", enemySpeed: -9, length: 8000, title: "Moonlight Peak" }
+};
 
 // --- AUDIO ---
 const sounds = {
@@ -48,74 +54,90 @@ sprites.stone.src = './assets/lightning-bolt.png';
 sprites.goal.src = './assets/pokeball.png';
 
 // --- LEVEL GENERATION & RESET ---
-function resetGame() {
-    // 1. Reset Player Stats
-    p.x = 100;
-    p.y = canvas.height - 200;
-    p.dy = 0;
-    p.isPikachu = false;
+let currentLevel = 1;
+
+function goToNextLevel() {
+    currentLevel++;
     
-    // 2. Reset UI and Camera
-    cameraX = 0;
-    score = 0;
-    scoreEl.innerText = score;
-    msgEl.innerText = "Find the Lightning Bolt!";
+    // Check if we ran out of levels
+    if (!levelConfigs[currentLevel]) {
+        alert("CONGRATULATIONS! You are the Pokémon Champion!");
+        currentLevel = 1; 
+    }
     
-    // 3. Clear existing objects
-    enemies.length = 0;
-    bolts.length = 0;
+    msgEl.innerText = `Entering Level ${currentLevel}: ${levelConfigs[currentLevel].title}`;
     
-    // 4. Regenerate a reachable level
-    platforms = generateLevel();
-    
-    // 5. Place the stone on the 3rd platform (guaranteed to exist and be reachable)
-    stone.active = true;
-    stone.x = platforms[2].x + 50;
-    stone.y = platforms[2].y - 60;
+    // Crucial: Reset the game state for the new level
+    resetGame(true); 
 }
 
 
+function resetGame(isNewLevel = false) {
+    const config = levelConfigs[currentLevel];
+    
+    // 1. Reset Player Position & State
+    p.x = 100;
+    p.y = canvas.height - 250; // Start slightly in the air
+    p.dy = 0;
+    p.isPikachu = false;
+    p.grounded = false;
+    cameraX = 0;
+    
+    if (!isNewLevel) {
+        score = 0;
+        scoreEl.innerText = score;
+        msgEl.innerText = "Find the Lightning Bolt!";
+    }
 
-function generateLevel() {
-    const colors = ["#4a2c00", "#5d4037", "#3e2723"];
+    // 2. Clear Arrays
+    enemies.length = 0;
+    bolts.length = 0;
+    
+    // 3. Re-generate platforms for the SPECIFIC level
+    platforms = generateLevel(currentLevel);
+    
+    // 4. Reposition the Stone
+    stone.active = true;
+    if (platforms[2]) {
+        stone.x = platforms[2].x + 50;
+        stone.y = platforms[2].y - 60;
+    }
+}
+
+
+function generateLevel(lvlNum) {
+    const config = levelConfigs[lvlNum] || levelConfigs[1]; // Fallback to Level 1
     const generatedPlatforms = [
-        { x: 0, y: canvas.height - 100, w: 1000, h: 100, color: colors[0] }
+        { x: 0, y: canvas.height - 100, w: 1000, h: 100, color: config.ground }
     ];
 
     let currentX = 1200;
-    let lastY = canvas.height - 100; // Track the height of the previous platform
-    const totalLength = 5000;
+    let lastY = canvas.height - 100;
 
-    while (currentX < totalLength - 600) {
+    while (currentX < config.length - 600) {
         let pWidth = Math.random() * 250 + 150;
-        
-        // --- REACHABILITY LOGIC ---
-        // We calculate a new Y that is no more than 150px higher or lower than the last one
-        let maxJumpUp = 150; 
+        let maxJumpUp = 160; 
         let newY = lastY + (Math.random() * (maxJumpUp * 2) - maxJumpUp);
 
-        // Keep platforms within the screen bounds (not too high, not below the floor)
-        const topLimit = 200;
-        const bottomLimit = canvas.height - 100;
-        if (newY < topLimit) newY = topLimit;
-        if (newY > bottomLimit) newY = bottomLimit;
+        // Keep platforms in screen bounds
+        newY = Math.max(250, Math.min(newY, canvas.height - 100));
 
         generatedPlatforms.push({
             x: currentX,
             y: newY,
             w: pWidth,
             h: 20,
-            color: colors[Math.floor(Math.random() * colors.length)]
+            color: config.ground
         });
 
-        lastY = newY; // Update lastY for the next iteration
-        currentX += pWidth + (Math.random() * 150 + 100); // Reasonable horizontal gap
+        lastY = newY;
+        currentX += pWidth + (Math.random() * 150 + 100);
     }
 
-    generatedPlatforms.push({ x: 4700, y: canvas.height - 100, w: 400, h: 100, color: "#2e7d32" });
+    // Final Goal Platform
+    generatedPlatforms.push({ x: config.length - 300, y: canvas.height - 100, w: 400, h: 100, color: "#2ecc71" });
     return generatedPlatforms;
 }
-
 // --- GAME OBJECTS ---
 
 let platforms = generateLevel();
@@ -165,14 +187,19 @@ class Player {
     }
 }
 
+
+
 class Enemy {
     constructor(x, y) {
-        this.x = x; this.y = y; this.w = 50; this.h = 50; this.dx = -3;
+        this.x = x; this.y = y; this.w = 50; this.h = 50;
+        // Use currentLevel speed from config
+        this.dx = levelConfigs[currentLevel].enemySpeed; 
     }
     update() { this.x += this.dx; }
     draw() { ctx.drawImage(sprites.enemy, this.x - cameraX, this.y, this.w, this.h); }
 }
 
+// --- INITIALIZATION ---
 const p = new Player();
 const enemies = [];
 const bolts = [];
@@ -232,30 +259,39 @@ document.getElementById('btn-shoot').addEventListener('touchstart', (e) => {
 
 // --- CORE LOOP ---
 function animate() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // 1. CLEAR & BACKGROUND
+    const config = levelConfigs[currentLevel];
+    ctx.fillStyle = config.bg; // Use the level's background color
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Clouds
+    // 2. WIN CONDITION (Check against the actual level length)
+    
+    const finishLine = levelConfigs[currentLevel].length - 300;
+    
+    if (p.x > finishLine) {
+        p.x = 0; // Move player immediately so this IF doesn't trigger again
+        playSound(sounds.level_complete);
+        goToNextLevel();
+        return; // Stop this frame entirely
+    }
+    
+    // 3. DRAW SCENERY
     ctx.fillStyle = "white";
     clouds.forEach(c => {
         let cx = (c.x - cameraX * c.s) % (canvas.width + 200);
         ctx.beginPath(); ctx.arc(cx, c.y, 30, 0, Math.PI*2); ctx.fill();
     });
 
-    // Platforms
+    // 4. DRAW PLATFORMS
     platforms.forEach(plat => {
-        ctx.fillStyle = plat.color || "#4a2c00"; // Uses plat.color if it exists
+        ctx.fillStyle = plat.color || config.ground;
         ctx.fillRect(plat.x - cameraX, plat.y, plat.w, plat.h);
     });
 
-    ctx.drawImage(sprites.goal, goalX - cameraX, canvas.height - 180, 80, 80);
+    // 5. DRAW GOAL (Pokéball at the end of the level)
+    ctx.drawImage(sprites.goal, finishLine - cameraX, canvas.height - 180, 80, 80);
 
-    if (p.x > goalX) {
-        playSound(sounds.level_complete);
-        alert("Level Clear!");
-        resetGame();
-        return;
-    }
-
+    // 6. EVOLUTION STONE
     if (stone.active) {
         ctx.drawImage(sprites.stone, stone.x - cameraX, stone.y, stone.w, stone.h);
         if (p.x < stone.x + stone.w && p.x + p.w > stone.x && p.y < stone.y + stone.h) {
@@ -265,73 +301,58 @@ function animate() {
         }
     }
 
-    p.update(); p.draw();
+    // 7. PLAYER & ENEMIES
+    p.update(); 
+    p.draw();
 
-    // Don't spawn if we are near the start or the very end
-    if (p.x > 500 && p.x < goalX - 600) {
+    // Spawn logic
+    if (p.x > 500 && p.x < finishLine - 600) {
         if (enemies.length < 5 && Math.random() < 0.01) {
             enemies.push(new Enemy(cameraX + canvas.width, canvas.height - 150));
         }
     }
+
+    // Enemy/Bolt Loop
     for (let i = enemies.length - 1; i >= 0; i--) {
         let en = enemies[i]; 
         en.update(); 
         en.draw();
 
-        // DELETE IF OFF-SCREEN (LEFT)
-        if (en.x < cameraX - 100) {
-            enemies.splice(i, 1);
-            continue; 
-        }
+        if (en.x < cameraX - 100) { enemies.splice(i, 1); continue; }
         
+        // Collision with Player
         if (p.x < en.x + en.w && p.x + p.w > en.x && p.y < en.y + en.h && p.y + p.h > en.y) {
             playSound(sounds.hit); 
             resetGame(); 
             return;
         }
 
+        // Collision with Bolts
         bolts.forEach((b, bi) => {
-            // We check if the Thunderbolt emoji/sprite overlaps the Meowth
-            if (b.x < en.x + en.w && 
-                b.x + 40 > en.x && // Match the width used in drawImage (40)
-                b.y < en.y + en.h && 
-                b.y + 20 > en.y) { 
-                    enemies.splice(i, 1); 
-                    bolts.splice(bi, 1);
-                    score += 50; 
-                    scoreEl.innerText = score;
+            if (b.x < en.x + en.w && b.x + 40 > en.x && b.y < en.y + en.h && b.y + 20 > en.y) { 
+                enemies.splice(i, 1); 
+                bolts.splice(bi, 1);
+                score += 50; 
+                scoreEl.innerText = score;
             }
         });
     }
 
-    
-    // --- THUNDERBOLTS LOGIC ---
+    // 8. DRAW THUNDERBOLTS
     bolts.forEach((b, i) => {
-        b.x += 12; // Speed of the bolt
-
-        // Option A: Use a Sprite (looks professional)
+        b.x += 12;
         if (sprites.stone.complete) {
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = "yellow";
-            // Draw the lightning here...
+            ctx.shadowBlur = 15; ctx.shadowColor = "yellow";
             ctx.drawImage(sprites.stone, b.x - cameraX, b.y, 40, 20);
-            // Reset shadow so it doesn't affect other objects
             ctx.shadowBlur = 0;
-        } 
-        // Option B: Use an Emoji (if image hasn't loaded)
-        else {
-            ctx.font = "30px Arial";
-            ctx.fillText("⚡", b.x - cameraX, b.y + 20);
+        } else {
+            ctx.font = "30px Arial"; ctx.fillText("⚡", b.x - cameraX, b.y + 20);
         }
-
-        // Remove bolt if it goes off screen
-        if (b.x - cameraX > canvas.width) {
-            bolts.splice(i, 1);
-        }
+        if (b.x - cameraX > canvas.width) bolts.splice(i, 1);
     });
+
     requestAnimationFrame(animate);
 }
-
 // Start Game
 document.getElementById('start-btn').onclick = () => {
     document.getElementById('start-overlay').style.display = 'none';
