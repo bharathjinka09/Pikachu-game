@@ -46,61 +46,72 @@ sprites.goal.src = './assets/pokeball.png';
 
 // --- LEVEL GENERATION & RESET ---
 function resetGame() {
-    // Reset Player
+    // 1. Reset Player Stats
     p.x = 100;
-    p.y = platforms[0].y - 60;
+    p.y = canvas.height - 200;
     p.dy = 0;
     p.isPikachu = false;
     
-    // Reset World
+    // 2. Reset UI and Camera
     cameraX = 0;
     score = 0;
     scoreEl.innerText = score;
     msgEl.innerText = "Find the Lightning Bolt!";
     
-    // Clear dynamic arrays
+    // 3. Clear existing objects
     enemies.length = 0;
     bolts.length = 0;
     
-    // Re-generate Level
+    // 4. Regenerate a reachable level
     platforms = generateLevel();
     
-    // Place Stone on the 3rd or 4th platform so it's always reachable
+    // 5. Place the stone on the 3rd platform (guaranteed to exist and be reachable)
     stone.active = true;
-    stone.x = platforms[3].x + 50;
-    stone.y = platforms[3].y - 60;
+    stone.x = platforms[2].x + 50;
+    stone.y = platforms[2].y - 60;
 }
 
 
 
 function generateLevel() {
-    const colors = ["#4a2c00", "#5d4037", "#3e2723"]; // Different shades of ground/dirt
+    const colors = ["#4a2c00", "#5d4037", "#3e2723"];
     const generatedPlatforms = [
         { x: 0, y: canvas.height - 100, w: 1000, h: 100, color: colors[0] }
     ];
 
     let currentX = 1200;
+    let lastY = canvas.height - 100; // Track the height of the previous platform
     const totalLength = 5000;
 
     while (currentX < totalLength - 600) {
         let pWidth = Math.random() * 250 + 150;
-        let pY = canvas.height - (Math.random() * 300 + 150); 
         
+        // --- REACHABILITY LOGIC ---
+        // We calculate a new Y that is no more than 150px higher or lower than the last one
+        let maxJumpUp = 150; 
+        let newY = lastY + (Math.random() * (maxJumpUp * 2) - maxJumpUp);
+
+        // Keep platforms within the screen bounds (not too high, not below the floor)
+        const topLimit = 200;
+        const bottomLimit = canvas.height - 100;
+        if (newY < topLimit) newY = topLimit;
+        if (newY > bottomLimit) newY = bottomLimit;
+
         generatedPlatforms.push({
             x: currentX,
-            y: pY,
+            y: newY,
             w: pWidth,
             h: 20,
-            color: colors[Math.floor(Math.random() * colors.length)] // Random color
+            color: colors[Math.floor(Math.random() * colors.length)]
         });
 
-        currentX += pWidth + (Math.random() * 200 + 150);
+        lastY = newY; // Update lastY for the next iteration
+        currentX += pWidth + (Math.random() * 150 + 100); // Reasonable horizontal gap
     }
 
-    generatedPlatforms.push({ x: 4700, y: canvas.height - 100, w: 400, h: 100, color: "#2e7d32" }); // Green goal floor
+    generatedPlatforms.push({ x: 4700, y: canvas.height - 100, w: 400, h: 100, color: "#2e7d32" });
     return generatedPlatforms;
 }
-
 
 // --- GAME OBJECTS ---
 
@@ -113,27 +124,31 @@ let clouds = [
 class Player {
     constructor() {
         this.w = 60; this.h = 60;
-        this.x = 100; this.y = platforms[0].y - 60;
+        this.x = 100; this.y = 0;
         this.dy = 0; this.speed = 7; this.jump = -18;
-        this.isPikachu = false; this.grounded = true;
+        this.isPikachu = false; 
+        this.grounded = true;
+        this.canDoubleJump = false; // New property
     }
 
     update() {
+        // Horizontal Movement
         if (keys.ArrowRight) this.x += this.speed;
         if (keys.ArrowLeft && this.x > 0) this.x -= this.speed;
-        if (keys.ArrowUp && this.grounded) {
-            this.dy = this.jump;
-            this.grounded = false;
-            playSound(sounds.jump);
-        }
+
+        // Jump Logic (Handled in the Event Listener now for better control)
         this.dy += gravity;
         this.y += this.dy;
 
+        // Collision Logic
         this.grounded = false;
         platforms.forEach(plat => {
             if (this.x < plat.x + plat.w && this.x + this.w > plat.x &&
                 this.y + this.h > plat.y && this.y + this.h < plat.y + plat.h && this.dy >= 0) {
-                this.dy = 0; this.grounded = true; this.y = plat.y - this.h;
+                this.dy = 0; 
+                this.grounded = true; 
+                this.canDoubleJump = true; // Reset double jump when touching ground
+                this.y = plat.y - this.h;
             }
         });
 
@@ -163,8 +178,26 @@ let stone = { x: 1300, y: canvas.height - 300, w: 40, h: 40, active: true };
 // --- CONTROLS ---
 window.onkeydown = (e) => { 
     keys[e.code] = true; 
-    if(e.code === 'Space' && p.isPikachu) fireZap();
+
+    // JUMP LOGIC
+    if (e.code === 'ArrowUp') {
+        if (p.grounded) {
+            // First Jump
+            p.dy = p.jump;
+            p.grounded = false;
+            p.canDoubleJump = true; 
+            playSound(sounds.jump);
+        } else if (p.canDoubleJump) {
+            // Double Jump
+            p.dy = p.jump * 0.8; // Make the second jump slightly weaker for better feel
+            p.canDoubleJump = false; // Use up the double jump
+            playSound(sounds.jump);
+        }
+    }
+
+    if (e.code === 'Space' && p.isPikachu) fireZap();
 };
+
 window.onkeyup = (e) => keys[e.code] = false;
 
 function fireZap() {
@@ -180,9 +213,16 @@ const mobileBtn = (id, key) => {
 };
 mobileBtn('btn-left', 'ArrowLeft');
 mobileBtn('btn-right', 'ArrowRight');
+
 document.getElementById('btn-jump').addEventListener('touchstart', (e) => { 
-    e.preventDefault(); if(p.grounded) { p.dy = p.jump; p.grounded = false; playSound(sounds.jump); }
+    e.preventDefault(); 
+    if (p.grounded) {
+        p.dy = p.jump; p.grounded = false; p.canDoubleJump = true; playSound(sounds.jump);
+    } else if (p.canDoubleJump) {
+        p.dy = p.jump * 0.8; p.canDoubleJump = false; playSound(sounds.jump);
+    }
 });
+
 document.getElementById('btn-shoot').addEventListener('touchstart', (e) => {
     e.preventDefault(); if(p.isPikachu) fireZap();
 });
