@@ -234,6 +234,7 @@ function animate() {
             alert("Game Over! Score: " + score);
             p.reset();
             enemies.length = 0; 
+            location.reload();
             return;
         }
 
