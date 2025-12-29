@@ -6,6 +6,23 @@ const msgEl = document.getElementById('message');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
+
+// --- AUDIO SECTION ---
+const sounds = {
+    jump: new Audio('./assets/jump.mp3'), // Short Beep
+    evolve: new Audio('./assets/evolve.mp3'), // Power up
+    zap: new Audio('./assets/bullet.mp3'), // Zap
+    hit: new Audio('./assets/hit.mp3'), // Death
+    level_complete: new Audio('./assets/level_complete.mp3'), // Level Complete
+    game_over: new Audio('./assets/game_over.mp3') // Game Over
+};
+
+// Helper function to play sounds from the start even if triggered rapidly
+function playSound(sound) {
+    sound.currentTime = 0;
+    sound.play().catch(e => console.log("Sound blocked until user interacts with page."));
+}
+
 let cameraX = 0;
 let score = 0;
 const gravity = 0.8;
@@ -67,6 +84,7 @@ class Player {
         if (keys.ArrowUp && this.grounded) {
             this.dy = this.jump;
             this.grounded = false;
+            playSound(sounds.jump);
         }
 
         this.dy += gravity;
@@ -138,6 +156,7 @@ window.onkeydown = (e) => {
     keys[e.code] = true;
     if (e.code === 'Space' && p.isPikachu) {
         bolts.push({ x: p.x + 50, y: p.y + 20, w: 30, h: 10 });
+        playSound(sounds.zap);
     }
 };
 window.onkeyup = (e) => keys[e.code] = false;
@@ -184,6 +203,7 @@ function animate() {
     
     // Win Check
     if (p.x > goalX) {
+        playSound(sounds.level_complete);
         alert("You Won! Final Score: " + score);
         p.reset();
         return; 
@@ -195,6 +215,7 @@ function animate() {
         if (p.x < stone.x + stone.w && p.x + p.w > stone.x && p.y < stone.y + stone.h && p.y + p.h > stone.y) {
             stone.active = false;
             p.isPikachu = true;
+            playSound(sounds.evolve);
             msgEl.innerText = "EVOLVED! Press SPACE to Thunderbolt!";
         }
     }
@@ -212,9 +233,11 @@ function animate() {
 
         // Player Hit Enemy
         if (p.x < en.x + en.w && p.x + p.w > en.x && p.y < en.y + en.h && p.y + p.h > en.y) {
+            playSound(sounds.hit);                
             alert("Game Over! Score: " + score);
             p.reset();
             enemies.length = 0; 
+            location.reload();
             return;
         }
 
