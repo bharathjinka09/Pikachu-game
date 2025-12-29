@@ -289,20 +289,46 @@ function animate() {
             resetGame(); 
             return;
         }
+
         bolts.forEach((b, bi) => {
-            if (b.x < en.x + en.w && b.x + b.w > en.x && b.y < en.y + en.h) {
-                enemies.splice(i, 1); bolts.splice(bi, 1);
-                score += 50; scoreEl.innerText = score;
+            // We check if the Thunderbolt emoji/sprite overlaps the Meowth
+            if (b.x < en.x + en.w && 
+                b.x + 40 > en.x && // Match the width used in drawImage (40)
+                b.y < en.y + en.h && 
+                b.y + 20 > en.y) { 
+                    enemies.splice(i, 1); 
+                    bolts.splice(bi, 1);
+                    score += 50; 
+                    scoreEl.innerText = score;
             }
         });
     }
 
+    
+    // --- THUNDERBOLTS LOGIC ---
     bolts.forEach((b, i) => {
-        b.x += 12; ctx.fillStyle = "yellow";
-        ctx.fillRect(b.x - cameraX, b.y, b.w, b.h);
-        if (b.x - cameraX > canvas.width) bolts.splice(i, 1);
-    });
+        b.x += 12; // Speed of the bolt
 
+        // Option A: Use a Sprite (looks professional)
+        if (sprites.stone.complete) {
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = "yellow";
+            // Draw the lightning here...
+            ctx.drawImage(sprites.stone, b.x - cameraX, b.y, 40, 20);
+            // Reset shadow so it doesn't affect other objects
+            ctx.shadowBlur = 0;
+        } 
+        // Option B: Use an Emoji (if image hasn't loaded)
+        else {
+            ctx.font = "30px Arial";
+            ctx.fillText("⚡", b.x - cameraX, b.y + 20);
+        }
+
+        // Remove bolt if it goes off screen
+        if (b.x - cameraX > canvas.width) {
+            bolts.splice(i, 1);
+        }
+    });
     requestAnimationFrame(animate);
 }
 
