@@ -56,7 +56,11 @@ sprites.goal.src = './assets/pokeball.png';
 // --- LEVEL GENERATION & RESET ---
 let currentLevel = 1;
 
+let isTransitioning = false;
 function goToNextLevel() {
+    if (isTransitioning) return; // Prevent double triggers
+    isTransitioning = true;
+
     currentLevel++;
     
     // Check if we ran out of levels
@@ -64,11 +68,23 @@ function goToNextLevel() {
         alert("CONGRATULATIONS! You are the Pokémon Champion!");
         currentLevel = 1; 
     }
+    // Show Overlay
+    const overlay = document.getElementById('level-overlay');
+    const title = document.getElementById('level-title');
+    const subtitle = document.getElementById('level-subtitle');
     
-    msgEl.innerText = `Entering Level ${currentLevel}: ${levelConfigs[currentLevel].title}`;
-    
-    // Crucial: Reset the game state for the new level
-    resetGame(true); 
+    title.innerText = `LEVEL ${currentLevel}`;
+    subtitle.innerText = levelConfigs[currentLevel].title;
+    overlay.style.display = 'flex';
+
+    // Refresh game state
+    resetGame(true);
+
+    // Wait 2 seconds, then hide overlay and resume
+    setTimeout(() => {
+        overlay.style.display = 'none';
+        isTransitioning = false;
+    }, 2000);
 }
 
 
@@ -259,6 +275,12 @@ document.getElementById('btn-shoot').addEventListener('touchstart', (e) => {
 
 // --- CORE LOOP ---
 function animate() {
+
+    if (isTransitioning) {
+        // Just keep the loop alive but don't process logic
+        requestAnimationFrame(animate);
+        return;
+    }
     // 1. CLEAR & BACKGROUND
     const config = levelConfigs[currentLevel];
     ctx.fillStyle = config.bg; // Use the level's background color
@@ -272,6 +294,7 @@ function animate() {
         p.x = 0; // Move player immediately so this IF doesn't trigger again
         playSound(sounds.level_complete);
         goToNextLevel();
+        requestAnimationFrame(animate);
         return; // Stop this frame entirely
     }
     
@@ -290,7 +313,7 @@ function animate() {
 
     // 5. DRAW GOAL (Pokéball at the end of the level)
     ctx.drawImage(sprites.goal, finishLine - cameraX, canvas.height - 180, 80, 80);
-
+    
     // 6. EVOLUTION STONE
     if (stone.active) {
         ctx.drawImage(sprites.stone, stone.x - cameraX, stone.y, stone.w, stone.h);
