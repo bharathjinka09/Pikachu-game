@@ -44,13 +44,67 @@ sprites.enemy.src = './assets/meowth.png';
 sprites.stone.src = './assets/lightning-bolt.png';
 sprites.goal.src = './assets/pokeball.png';
 
+// --- LEVEL GENERATION & RESET ---
+function resetGame() {
+    // Reset Player
+    p.x = 100;
+    p.y = platforms[0].y - 60;
+    p.dy = 0;
+    p.isPikachu = false;
+    
+    // Reset World
+    cameraX = 0;
+    score = 0;
+    scoreEl.innerText = score;
+    msgEl.innerText = "Find the Lightning Bolt!";
+    
+    // Clear dynamic arrays
+    enemies.length = 0;
+    bolts.length = 0;
+    
+    // Re-generate Level
+    platforms = generateLevel();
+    
+    // Place Stone on the 3rd or 4th platform so it's always reachable
+    stone.active = true;
+    stone.x = platforms[3].x + 50;
+    stone.y = platforms[3].y - 60;
+}
+
+
+
+function generateLevel() {
+    const colors = ["#4a2c00", "#5d4037", "#3e2723"]; // Different shades of ground/dirt
+    const generatedPlatforms = [
+        { x: 0, y: canvas.height - 100, w: 1000, h: 100, color: colors[0] }
+    ];
+
+    let currentX = 1200;
+    const totalLength = 5000;
+
+    while (currentX < totalLength - 600) {
+        let pWidth = Math.random() * 250 + 150;
+        let pY = canvas.height - (Math.random() * 300 + 150); 
+        
+        generatedPlatforms.push({
+            x: currentX,
+            y: pY,
+            w: pWidth,
+            h: 20,
+            color: colors[Math.floor(Math.random() * colors.length)] // Random color
+        });
+
+        currentX += pWidth + (Math.random() * 200 + 150);
+    }
+
+    generatedPlatforms.push({ x: 4700, y: canvas.height - 100, w: 400, h: 100, color: "#2e7d32" }); // Green goal floor
+    return generatedPlatforms;
+}
+
+
 // --- GAME OBJECTS ---
-const platforms = [
-    { x: 0, y: canvas.height - 100, w: 5000, h: 100 },
-    { x: 400, y: canvas.height - 250, w: 200, h: 20 },
-    { x: 800, y: canvas.height - 400, w: 200, h: 20 },
-    { x: 1200, y: canvas.height - 250, w: 300, h: 20 }
-];
+
+let platforms = generateLevel();
 
 let clouds = [
     {x: 200, y: 100, s: 0.2}, {x: 800, y: 50, s: 0.3}, {x: 1400, y: 150, s: 0.1}
@@ -84,7 +138,7 @@ class Player {
         });
 
         if (this.x > canvas.width / 2) cameraX = this.x - canvas.width / 2;
-        if (this.y > canvas.height) location.reload();
+        if (this.y > canvas.height) resetGame();
     }
 
     draw() {
@@ -144,8 +198,9 @@ function animate() {
         ctx.beginPath(); ctx.arc(cx, c.y, 30, 0, Math.PI*2); ctx.fill();
     });
 
+    // Platforms
     platforms.forEach(plat => {
-        ctx.fillStyle = "#4a2c00";
+        ctx.fillStyle = plat.color || "#4a2c00"; // Uses plat.color if it exists
         ctx.fillRect(plat.x - cameraX, plat.y, plat.w, plat.h);
     });
 
@@ -154,7 +209,7 @@ function animate() {
     if (p.x > goalX) {
         playSound(sounds.level_complete);
         alert("Level Clear!");
-        location.reload();
+        resetGame();
         return;
     }
 
@@ -169,12 +224,27 @@ function animate() {
 
     p.update(); p.draw();
 
-    if (Math.random() < 0.01) enemies.push(new Enemy(cameraX + canvas.width, canvas.height - 150));
-
+    // Don't spawn if we are near the start or the very end
+    if (p.x > 500 && p.x < goalX - 600) {
+        if (enemies.length < 5 && Math.random() < 0.01) {
+            enemies.push(new Enemy(cameraX + canvas.width, canvas.height - 150));
+        }
+    }
     for (let i = enemies.length - 1; i >= 0; i--) {
-        let en = enemies[i]; en.update(); en.draw();
+        let en = enemies[i]; 
+        en.update(); 
+        en.draw();
+
+        // DELETE IF OFF-SCREEN (LEFT)
+        if (en.x < cameraX - 100) {
+            enemies.splice(i, 1);
+            continue; 
+        }
+        
         if (p.x < en.x + en.w && p.x + p.w > en.x && p.y < en.y + en.h && p.y + p.h > en.y) {
-            playSound(sounds.hit); alert("Caught!"); location.reload(); return;
+            playSound(sounds.hit); 
+            resetGame(); 
+            return;
         }
         bolts.forEach((b, bi) => {
             if (b.x < en.x + en.w && b.x + b.w > en.x && b.y < en.y + en.h) {
