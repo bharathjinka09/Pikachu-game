@@ -12,15 +12,15 @@ const gravity = 0.8;
 
 // --- ASSET LOADING ---
 const sprites = {
+    pichu: new Image(),
     pikachu: new Image(),
-    raichu: new Image(),
     enemy: new Image(),
     stone: new Image()
 };
 
 // Reliable URLs
+sprites.pichu.src = './assets/pichu.png';
 sprites.pikachu.src = './assets/pikachu.png';
-sprites.raichu.src = './assets/raichu.png';
 sprites.enemy.src = './assets/meowth.png';
 sprites.stone.src = './assets/lightning-bolt.png';
 
@@ -41,16 +41,16 @@ class Player {
         this.dy = 0;
         this.speed = 7;
         this.jump = -18;
-        this.isRaichu = false;
+        this.isPikachu = false;
         this.grounded = true;
     }
 
     draw() {
-        const img = this.isRaichu ? sprites.raichu : sprites.pikachu;
+        const img = this.isPikachu ? sprites.pikachu : sprites.pichu;
         if (img.complete && img.naturalHeight !== 0) {
             ctx.drawImage(img, this.x - cameraX, this.y, this.w, this.h);
         } else {
-            ctx.fillStyle = this.isRaichu ? "#F08030" : "#FFDE00";
+            ctx.fillStyle = this.isPikachu ? "#F08030" : "#FFDE00";
             ctx.fillRect(this.x - cameraX, this.y, this.w, this.h);
         }
     }
@@ -126,7 +126,7 @@ const keys = {};
 
 window.onkeydown = (e) => {
     keys[e.code] = true;
-    if (e.code === 'Space' && p.isRaichu) {
+    if (e.code === 'Space' && p.isPikachu) {
         bolts.push({ x: p.x + 50, y: p.y + 20, w: 30, h: 10 });
     }
 };
@@ -151,7 +151,7 @@ function animate() {
         ctx.drawImage(sprites.stone, stone.x - cameraX, stone.y, stone.w, stone.h);
         if (p.x < stone.x + stone.w && p.x + p.w > stone.x && p.y < stone.y + stone.h && p.y + p.h > stone.y) {
             stone.active = false;
-            p.isRaichu = true;
+            p.isPikachu = true;
             msgEl.innerText = "EVOLVED! Press SPACE to Thunderbolt!";
         }
     }
