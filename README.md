@@ -1,1 +1,1 @@
-# Pikachu game similar to super mario
+# Pikachu game
